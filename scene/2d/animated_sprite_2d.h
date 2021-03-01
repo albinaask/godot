@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -38,21 +38,10 @@ class SpriteFrames : public Resource {
 	GDCLASS(SpriteFrames, Resource);
 
 	struct Anim {
-		float speed;
-		bool loop;
+		float speed = 5.0;
+		bool loop = true;
 		Vector<Ref<Texture2D>> frames;
-
-		Anim() {
-			loop = true;
-			speed = 5;
-		}
-
-		StringName normal_name;
-		StringName specular_name;
 	};
-
-	Color specular_color;
-	float shininess;
 
 	Map<StringName, Anim> animations;
 
@@ -95,34 +84,6 @@ public:
 		return E->get().frames[p_idx];
 	}
 
-	_FORCE_INLINE_ Ref<Texture2D> get_normal_frame(const StringName &p_anim, int p_idx) const {
-		const Map<StringName, Anim>::Element *E = animations.find(p_anim);
-		ERR_FAIL_COND_V_MSG(!E, Ref<Texture2D>(), "Animation '" + String(p_anim) + "' doesn't exist.");
-		ERR_FAIL_COND_V(p_idx < 0, Ref<Texture2D>());
-
-		const Map<StringName, Anim>::Element *EN = animations.find(E->get().normal_name);
-
-		if (!EN || p_idx >= EN->get().frames.size()) {
-			return Ref<Texture2D>();
-		}
-
-		return EN->get().frames[p_idx];
-	}
-
-	_FORCE_INLINE_ Ref<Texture2D> get_specular_frame(const StringName &p_anim, int p_idx) const {
-		const Map<StringName, Anim>::Element *E = animations.find(p_anim);
-		ERR_FAIL_COND_V(!E, Ref<Texture2D>());
-		ERR_FAIL_COND_V(p_idx < 0, Ref<Texture2D>());
-
-		const Map<StringName, Anim>::Element *EN = animations.find(E->get().specular_name);
-
-		if (!EN || p_idx >= EN->get().frames.size()) {
-			return Ref<Texture2D>();
-		}
-
-		return EN->get().frames[p_idx];
-	}
-
 	void set_frame(const StringName &p_anim, int p_idx, const Ref<Texture2D> &p_frame) {
 		Map<StringName, Anim>::Element *E = animations.find(p_anim);
 		ERR_FAIL_COND_MSG(!E, "Animation '" + String(p_anim) + "' doesn't exist.");
@@ -143,20 +104,20 @@ class AnimatedSprite2D : public Node2D {
 	GDCLASS(AnimatedSprite2D, Node2D);
 
 	Ref<SpriteFrames> frames;
-	bool playing;
-	bool backwards;
-	StringName animation;
-	int frame;
-	float speed_scale;
+	bool playing = false;
+	bool backwards = false;
+	StringName animation = "default";
+	int frame = 0;
+	float speed_scale = 1.0f;
 
-	bool centered;
+	bool centered = true;
 	Point2 offset;
 
-	bool is_over;
-	float timeout;
+	bool is_over = false;
+	float timeout = 0.0;
 
-	bool hflip;
-	bool vflip;
+	bool hflip = false;
+	bool vflip = false;
 
 	void _res_changed();
 
@@ -165,9 +126,6 @@ class AnimatedSprite2D : public Node2D {
 	void _set_playing(bool p_playing);
 	bool _is_playing() const;
 	Rect2 _get_rect() const;
-
-	Color specular_color;
-	float shininess;
 
 protected:
 	static void _bind_methods();
@@ -215,12 +173,6 @@ public:
 
 	void set_flip_v(bool p_flip);
 	bool is_flipped_v() const;
-
-	void set_specular_color(const Color &p_color);
-	Color get_specular_color() const;
-
-	void set_shininess(float p_shininess);
-	float get_shininess() const;
 
 	virtual String get_configuration_warning() const override;
 	AnimatedSprite2D();

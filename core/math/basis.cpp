@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -32,7 +32,7 @@
 
 #include "core/math/math_funcs.h"
 #include "core/os/copymem.h"
-#include "core/print_string.h"
+#include "core/string/print_string.h"
 
 #define cofac(row1, col1, row2, col2) \
 	(elements[row1][col1] * elements[row2][col2] - elements[row1][col2] * elements[row2][col1])
@@ -113,19 +113,22 @@ bool Basis::is_rotation() const {
 	return Math::is_equal_approx(determinant(), 1, UNIT_EPSILON) && is_orthogonal();
 }
 
+#ifdef MATH_CHECKS
+// This method is only used once, in diagonalize. If it's desired elsewhere, feel free to remove the #ifdef.
 bool Basis::is_symmetric() const {
-	if (!Math::is_equal_approx_ratio(elements[0][1], elements[1][0], UNIT_EPSILON)) {
+	if (!Math::is_equal_approx(elements[0][1], elements[1][0])) {
 		return false;
 	}
-	if (!Math::is_equal_approx_ratio(elements[0][2], elements[2][0], UNIT_EPSILON)) {
+	if (!Math::is_equal_approx(elements[0][2], elements[2][0])) {
 		return false;
 	}
-	if (!Math::is_equal_approx_ratio(elements[1][2], elements[2][1], UNIT_EPSILON)) {
+	if (!Math::is_equal_approx(elements[1][2], elements[2][1])) {
 		return false;
 	}
 
 	return true;
 }
+#endif
 
 Basis Basis::diagonalize() {
 //NOTE: only implemented for symmetric matrices
@@ -737,18 +740,6 @@ bool Basis::is_equal_approx(const Basis &p_basis) const {
 	return elements[0].is_equal_approx(p_basis.elements[0]) && elements[1].is_equal_approx(p_basis.elements[1]) && elements[2].is_equal_approx(p_basis.elements[2]);
 }
 
-bool Basis::is_equal_approx_ratio(const Basis &a, const Basis &b, real_t p_epsilon) const {
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			if (!Math::is_equal_approx_ratio(a.elements[i][j], b.elements[i][j], p_epsilon)) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
 bool Basis::operator==(const Basis &p_matrix) const {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -799,8 +790,8 @@ Quat Basis::get_quat() const {
 		temp[2] = ((m.elements[1][0] - m.elements[0][1]) * s);
 	} else {
 		int i = m.elements[0][0] < m.elements[1][1] ?
-						(m.elements[1][1] < m.elements[2][2] ? 2 : 1) :
-						(m.elements[0][0] < m.elements[2][2] ? 2 : 0);
+						  (m.elements[1][1] < m.elements[2][2] ? 2 : 1) :
+						  (m.elements[0][0] < m.elements[2][2] ? 2 : 0);
 		int j = (i + 1) % 3;
 		int k = (i + 2) % 3;
 
@@ -1026,15 +1017,15 @@ void Basis::set_diagonal(const Vector3 &p_diag) {
 	elements[2][2] = p_diag.z;
 }
 
-Basis Basis::slerp(const Basis &target, const real_t &t) const {
+Basis Basis::slerp(const Basis &p_to, const real_t &p_weight) const {
 	//consider scale
 	Quat from(*this);
-	Quat to(target);
+	Quat to(p_to);
 
-	Basis b(from.slerp(to, t));
-	b.elements[0] *= Math::lerp(elements[0].length(), target.elements[0].length(), t);
-	b.elements[1] *= Math::lerp(elements[1].length(), target.elements[1].length(), t);
-	b.elements[2] *= Math::lerp(elements[2].length(), target.elements[2].length(), t);
+	Basis b(from.slerp(to, p_weight));
+	b.elements[0] *= Math::lerp(elements[0].length(), p_to.elements[0].length(), p_weight);
+	b.elements[1] *= Math::lerp(elements[1].length(), p_to.elements[1].length(), p_weight);
+	b.elements[2] *= Math::lerp(elements[2].length(), p_to.elements[2].length(), p_weight);
 
 	return b;
 }

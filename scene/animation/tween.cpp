@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -29,8 +29,6 @@
 /*************************************************************************/
 
 #include "tween.h"
-
-#include "core/method_bind_ext.gen.inc"
 
 void Tween::_add_pending_command(StringName p_key, const Variant &p_arg1, const Variant &p_arg2, const Variant &p_arg3, const Variant &p_arg4, const Variant &p_arg5, const Variant &p_arg6, const Variant &p_arg7, const Variant &p_arg8, const Variant &p_arg9, const Variant &p_arg10) {
 	// Add a new pending command and reference it
@@ -701,20 +699,20 @@ void Tween::_tween_process(float p_delta) {
 	}
 
 	// Are all of the tweens complete?
-	bool all_finished = true;
+	int any_unfinished = 0;
 
 	// For each tween we wish to interpolate...
 	for (List<InterpolateData>::Element *E = interpolates.front(); E; E = E->next()) {
 		// Get the data from it
 		InterpolateData &data = E->get();
 
-		// Track if we hit one that isn't finished yet
-		all_finished = all_finished && data.finish;
-
 		// Is the data not active or already finished? No need to go any further
 		if (!data.active || data.finish) {
 			continue;
 		}
+
+		// Track if we hit one that isn't finished yet
+		any_unfinished++;
 
 		// Get the target object for this interpolation
 		Object *object = ObjectDB::get_instance(data.id);
@@ -802,17 +800,15 @@ void Tween::_tween_process(float p_delta) {
 			// If we are not repeating the tween, remove it
 			if (!repeat) {
 				call_deferred("_remove_by_uid", data.uid);
+				any_unfinished--;
 			}
-		} else if (!repeat) {
-			// Check whether all tweens are finished
-			all_finished = all_finished && data.finish;
 		}
 	}
 	// One less update left to go
 	pending_update--;
 
 	// If all tweens are completed, we no longer need to be active
-	if (all_finished) {
+	if (any_unfinished == 0) {
 		set_active(false);
 		emit_signal("tween_all_completed");
 	}
@@ -1102,7 +1098,7 @@ void Tween::seek(real_t p_time) {
 real_t Tween::tell() const {
 	// We want to grab the position of the furthest along tween
 	pending_update++;
-	real_t pos = 0;
+	real_t pos = 0.0;
 
 	// For each interpolation...
 	for (const List<InterpolateData>::Element *E = interpolates.front(); E; E = E->next()) {
@@ -1126,7 +1122,7 @@ real_t Tween::get_runtime() const {
 	pending_update++;
 
 	// For each interpolation...
-	real_t runtime = 0;
+	real_t runtime = 0.0;
 	for (const List<InterpolateData>::Element *E = interpolates.front(); E; E = E->next()) {
 		// Get the tween data and see if it's runtime is greater than the previous tweens
 		const InterpolateData &data = E->get();
@@ -1354,6 +1350,9 @@ void Tween::interpolate_property(Object *p_object, NodePath p_property, Variant 
 		return;
 	}
 
+	// Check that the target object is valid
+	ERR_FAIL_COND_MSG(p_object == nullptr, vformat("The Tween \"%s\"'s target node is `null`. Is the node reference correct?", get_name()));
+
 	// Get the property from the node path
 	p_property = p_property.get_as_property_path();
 
@@ -1381,6 +1380,9 @@ void Tween::interpolate_method(Object *p_object, StringName p_method, Variant p_
 		_add_pending_command("interpolate_method", p_object, p_method, p_initial_val, p_final_val, p_duration, p_trans_type, p_ease_type, p_delay);
 		return;
 	}
+
+	// Check that the target object is valid
+	ERR_FAIL_COND_MSG(p_object == nullptr, vformat("The Tween \"%s\"'s target node is `null`. Is the node reference correct?", get_name()));
 
 	// Convert any integers into REALs as they are better for interpolation
 	if (p_initial_val.get_type() == Variant::INT) {
@@ -1793,12 +1795,6 @@ void Tween::targeting_method(Object *p_object, StringName p_method, Object *p_in
 }
 
 Tween::Tween() {
-	// Initialize tween attributes
-	tween_process_mode = TWEEN_PROCESS_IDLE;
-	repeat = false;
-	speed_scale = 1;
-	pending_update = 0;
-	uid = 0;
 }
 
 Tween::~Tween() {

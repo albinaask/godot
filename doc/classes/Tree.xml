@@ -35,6 +35,15 @@
 				Clears the tree. This removes all items.
 			</description>
 		</method>
+		<method name="clear_column_title_opentype_features">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+				Removes all OpenType features from the item's text.
+			</description>
+		</method>
 		<method name="create_item">
 			<return type="TreeItem">
 			</return>
@@ -46,6 +55,13 @@
 				Creates an item in the tree and adds it as a child of [code]parent[/code].
 				If [code]parent[/code] is [code]null[/code], the root item will be the parent, or the new item will be the root itself if the tree is empty.
 				The new item will be the [code]idx[/code]th child of parent, or it will be the last child if there are not enough siblings.
+			</description>
+		</method>
+		<method name="edit_selected">
+			<return type="bool">
+			</return>
+			<description>
+				Edits the selected tree item as if it was clicked. The item must be set editable with [method TreeItem.set_editable]. Returns [code]true[/code] if the item could be edited. Fails if no item is selected.
 			</description>
 		</method>
 		<method name="ensure_cursor_is_visible">
@@ -73,6 +89,35 @@
 			</argument>
 			<description>
 				Returns the column's title.
+			</description>
+		</method>
+		<method name="get_column_title_direction" qualifiers="const">
+			<return type="int" enum="Control.TextDirection">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+				Returns column title base writing direction.
+			</description>
+		</method>
+		<method name="get_column_title_language" qualifiers="const">
+			<return type="String">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<description>
+				Returns column title language code.
+			</description>
+		</method>
+		<method name="get_column_title_opentype_feature" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="tag" type="String">
+			</argument>
+			<description>
+				Returns OpenType feature [code]tag[/code] of the column title.
 			</description>
 		</method>
 		<method name="get_column_width" qualifiers="const">
@@ -106,14 +151,21 @@
 			<return type="TreeItem">
 			</return>
 			<description>
-				Returns the currently edited item. This is only available for custom cell mode.
+				Returns the currently edited item. Can be used with [signal item_edited] to get the item that was modified.
+				[codeblock]
+				func _ready():
+				    $Tree.item_edited.connect(on_Tree_item_edited)
+
+				func on_Tree_item_edited():
+				    print($Tree.get_edited()) # This item just got edited (e.g. checked).
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_edited_column" qualifiers="const">
 			<return type="int">
 			</return>
 			<description>
-				Returns the column for the currently edited item. This is only available for custom cell mode.
+				Returns the column for the currently edited item.
 			</description>
 		</method>
 		<method name="get_item_area_rect" qualifiers="const">
@@ -185,6 +237,14 @@
 				To tell whether a column of an item is selected, use [method TreeItem.is_selected].
 			</description>
 		</method>
+		<method name="scroll_to_item">
+			<return type="void">
+			</return>
+			<argument index="0" name="item" type="Object">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="set_column_expand">
 			<return type="void">
 			</return>
@@ -216,6 +276,41 @@
 			</argument>
 			<description>
 				Sets the title of a column.
+			</description>
+		</method>
+		<method name="set_column_title_direction">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="direction" type="int" enum="Control.TextDirection">
+			</argument>
+			<description>
+				Sets column title base writing direction.
+			</description>
+		</method>
+		<method name="set_column_title_language">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="language" type="String">
+			</argument>
+			<description>
+				Sets language code of column title used for line-breaking and text shaping algorithms, if left empty current locale is used instead.
+			</description>
+		</method>
+		<method name="set_column_title_opentype_feature">
+			<return type="void">
+			</return>
+			<argument index="0" name="column" type="int">
+			</argument>
+			<argument index="1" name="tag" type="String">
+			</argument>
+			<argument index="2" name="value" type="int">
+			</argument>
+			<description>
+				Sets OpenType feature [code]tag[/code] for the column title.
 			</description>
 		</method>
 		<method name="set_column_titles_visible">
@@ -391,7 +486,10 @@
 			The arrow icon used when a foldable item is not collapsed.
 		</theme_item>
 		<theme_item name="arrow_collapsed" type="Texture2D">
-			The arrow icon used when a foldable item is collapsed.
+			The arrow icon used when a foldable item is collapsed (for left-to-right layouts).
+		</theme_item>
+		<theme_item name="arrow_collapsed_mirrored" type="Texture2D">
+			The arrow icon used when a foldable item is collapsed (for right-to-left layouts).
 		</theme_item>
 		<theme_item name="bg" type="StyleBox">
 			Default [StyleBox] for the [Tree], i.e. used when the control is not being focused.
@@ -441,8 +539,14 @@
 		<theme_item name="font_color" type="Color" default="Color( 0.69, 0.69, 0.69, 1 )">
 			Default text [Color] of the item.
 		</theme_item>
-		<theme_item name="font_color_selected" type="Color" default="Color( 1, 1, 1, 1 )">
+		<theme_item name="font_outline_color" type="Color" default="Color( 1, 1, 1, 1 )">
+			The tint of text outline of the item.
+		</theme_item>
+		<theme_item name="font_selected_color" type="Color" default="Color( 1, 1, 1, 1 )">
 			Text [Color] used when the item is selected.
+		</theme_item>
+		<theme_item name="font_size" type="int">
+			Font size of the item's text.
 		</theme_item>
 		<theme_item name="guide_color" type="Color" default="Color( 0, 0, 0, 0.1 )">
 			[Color] of the guideline.
@@ -452,6 +556,9 @@
 		</theme_item>
 		<theme_item name="item_margin" type="int" default="12">
 			The horizontal margin at the start of an item. This is used when folding is enabled for the item.
+		</theme_item>
+		<theme_item name="outline_size" type="int" default="0">
+			The size of the text outline.
 		</theme_item>
 		<theme_item name="relationship_line_color" type="Color" default="Color( 0.27, 0.27, 0.27, 1 )">
 			[Color] of the relationship lines.

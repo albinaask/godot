@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -104,6 +104,7 @@ Error NetworkedMultiplayerENet::create_server(int p_port, int p_max_clients, int
 	if (dtls_enabled) {
 		enet_host_dtls_server_setup(host, dtls_key.ptr(), dtls_cert.ptr());
 	}
+	enet_host_refuse_new_connections(host, refuse_connections);
 #endif
 
 	_setup_compressor();
@@ -160,6 +161,7 @@ Error NetworkedMultiplayerENet::create_client(const String &p_address, int p_por
 	if (dtls_enabled) {
 		enet_host_dtls_client_setup(host, dtls_cert.ptr(), dtls_verify, p_address.utf8().get_data());
 	}
+	enet_host_refuse_new_connections(host, refuse_connections);
 #endif
 
 	_setup_compressor();
@@ -641,7 +643,9 @@ int NetworkedMultiplayerENet::get_unique_id() const {
 void NetworkedMultiplayerENet::set_refuse_new_connections(bool p_enable) {
 	refuse_connections = p_enable;
 #ifdef GODOT_ENET
-	enet_host_refuse_new_connections(host, p_enable);
+	if (active) {
+		enet_host_refuse_new_connections(host, p_enable);
+	}
 #endif
 }
 
@@ -780,6 +784,14 @@ int NetworkedMultiplayerENet::get_peer_port(int p_peer_id) const {
 #endif
 }
 
+void NetworkedMultiplayerENet::set_peer_timeout(int p_peer_id, int p_timeout_limit, int p_timeout_min, int p_timeout_max) {
+	ERR_FAIL_COND_MSG(!peer_map.has(p_peer_id), vformat("Peer ID %d not found in the list of peers.", p_peer_id));
+	ERR_FAIL_COND_MSG(!is_server() && p_peer_id != 1, "Can't change the timeout of peers other then the server when acting as a client.");
+	ERR_FAIL_COND_MSG(peer_map[p_peer_id] == nullptr, vformat("Peer ID %d found in the list of peers, but is null.", p_peer_id));
+	ERR_FAIL_COND_MSG(p_timeout_limit > p_timeout_min || p_timeout_min > p_timeout_max, "Timeout limit must be less than minimum timeout, which itself must be less then maximum timeout");
+	enet_peer_timeout(peer_map[p_peer_id], p_timeout_limit, p_timeout_min, p_timeout_max);
+}
+
 void NetworkedMultiplayerENet::set_transfer_channel(int p_channel) {
 	ERR_FAIL_COND_MSG(p_channel < -1 || p_channel >= channel_count, vformat("The transfer channel must be set between 0 and %d, inclusive (got %d).", channel_count - 1, p_channel));
 	ERR_FAIL_COND_MSG(p_channel == SYSCH_CONFIG, vformat("The channel %d is reserved.", SYSCH_CONFIG));
@@ -834,6 +846,7 @@ void NetworkedMultiplayerENet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_dtls_verify_enabled"), &NetworkedMultiplayerENet::is_dtls_verify_enabled);
 	ClassDB::bind_method(D_METHOD("get_peer_address", "id"), &NetworkedMultiplayerENet::get_peer_address);
 	ClassDB::bind_method(D_METHOD("get_peer_port", "id"), &NetworkedMultiplayerENet::get_peer_port);
+	ClassDB::bind_method(D_METHOD("set_peer_timeout", "id", "timeout_limit", "timeout_min", "timeout_max"), &NetworkedMultiplayerENet::set_peer_timeout);
 
 	ClassDB::bind_method(D_METHOD("get_packet_channel"), &NetworkedMultiplayerENet::get_packet_channel);
 	ClassDB::bind_method(D_METHOD("get_last_packet_channel"), &NetworkedMultiplayerENet::get_last_packet_channel);
@@ -862,28 +875,12 @@ void NetworkedMultiplayerENet::_bind_methods() {
 }
 
 NetworkedMultiplayerENet::NetworkedMultiplayerENet() {
-	active = false;
-	server = false;
-	refuse_connections = false;
-	server_relay = true;
-	unique_id = 0;
-	target_peer = 0;
-	current_packet.packet = nullptr;
-	transfer_mode = TRANSFER_MODE_RELIABLE;
-	channel_count = SYSCH_MAX;
-	transfer_channel = -1;
-	always_ordered = false;
-	connection_status = CONNECTION_DISCONNECTED;
-	compression_mode = COMPRESS_NONE;
 	enet_compressor.context = this;
 	enet_compressor.compress = enet_compress;
 	enet_compressor.decompress = enet_decompress;
 	enet_compressor.destroy = enet_compressor_destroy;
 
 	bind_ip = IP_Address("*");
-
-	dtls_enabled = false;
-	dtls_verify = true;
 }
 
 NetworkedMultiplayerENet::~NetworkedMultiplayerENet() {

@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -30,8 +30,8 @@
 
 #include "script_class_parser.h"
 
-#include "core/map.h"
 #include "core/os/os.h"
+#include "core/templates/map.h"
 
 #include "../utils/string_utils.h"
 
@@ -151,7 +151,7 @@ ScriptClassParser::Token ScriptClassParser::get_token() {
 			case '"': {
 				bool verbatim = idx != 0 && code[idx - 1] == '@';
 
-				CharType begin_str = code[idx];
+				char32_t begin_str = code[idx];
 				idx++;
 				String tk_string = String();
 				while (true) {
@@ -170,13 +170,13 @@ ScriptClassParser::Token ScriptClassParser::get_token() {
 					} else if (code[idx] == '\\' && !verbatim) {
 						//escaped characters...
 						idx++;
-						CharType next = code[idx];
+						char32_t next = code[idx];
 						if (next == 0) {
 							error_str = "Unterminated String";
 							error = true;
 							return TK_ERROR;
 						}
-						CharType res = 0;
+						char32_t res = 0;
 
 						switch (next) {
 							case 'b':
@@ -234,8 +234,8 @@ ScriptClassParser::Token ScriptClassParser::get_token() {
 
 				if (code[idx] == '-' || (code[idx] >= '0' && code[idx] <= '9')) {
 					//a number
-					const CharType *rptr;
-					double number = String::to_double(&code[idx], &rptr);
+					const char32_t *rptr;
+					double number = String::to_float(&code[idx], &rptr);
 					idx += (rptr - &code[idx]);
 					value = number;
 					return TK_NUMBER;
@@ -735,9 +735,9 @@ Error ScriptClassParser::parse_file(const String &p_filepath) {
 
 	ERR_FAIL_COND_V_MSG(ferr != OK, ferr,
 			ferr == ERR_INVALID_DATA ?
-					"File '" + p_filepath + "' contains invalid unicode (UTF-8), so it was not loaded."
+					  "File '" + p_filepath + "' contains invalid unicode (UTF-8), so it was not loaded."
 											" Please ensure that scripts are saved in valid UTF-8 unicode." :
-					"Failed to read file: '" + p_filepath + "'.");
+					  "Failed to read file: '" + p_filepath + "'.");
 
 	run_dummy_preprocessor(source, p_filepath);
 
