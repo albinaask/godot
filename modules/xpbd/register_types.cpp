@@ -1,7 +1,8 @@
 #include "register_types.h"
 
-#include "core/class_db.h"
-//#include "core/project_settings.h"
+#include "xpbd_physics_server.h"
+#include "core/config/project_settings.h"
+#include "core/object/class_db.h"
 
 /**
 	@author albinaask
