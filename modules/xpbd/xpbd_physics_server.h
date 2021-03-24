@@ -101,6 +101,7 @@ public:
 	virtual BodyMode body_get_mode(RID p_body) const override;
 
 	virtual void body_add_shape(RID p_body, RID p_shape, const Transform &p_transform = Transform(), bool p_disabled = false) override;
+	
 	// Not supported, Please remove and add new shape
 	virtual void body_set_shape(RID p_body, int p_shape_idx, RID p_shape) override;
 	virtual void body_set_shape_transform(RID p_body, int p_shape_idx, const Transform &p_transform) override;
@@ -291,13 +292,6 @@ public:
 
 	virtual void generic_6dof_joint_set_flag(RID p_joint, Vector3::Axis p_axis, G6DOFJointAxisFlag p_flag, bool p_enable) override;
 	virtual bool generic_6dof_joint_get_flag(RID p_joint, Vector3::Axis p_axis, G6DOFJointAxisFlag p_flag) const override;
-
-	virtual RID joint_create_slider(RID p_body_A, const Transform &p_local_frame_A, RID p_body_B, const Transform &p_local_frame_B) const;
-	virtual RID joint_create_cone_twist(RID p_body_A, const Transform &p_local_frame_A, RID p_body_B, const Transform &p_local_frame_B) const;
-	virtual RID joint_create_generic_6dof(RID p_body_A, const Transform &p_local_frame_A, RID p_body_B, const Transform &p_local_frame_B)const;
-	virtual RID joint_create_hinge(RID p_body_A, const Transform &p_hinge_A, RID p_body_B, const Transform &p_hinge_B) const;
-	virtual RID joint_create_hinge_simple(RID p_body_A, const Vector3 &p_pivot_A, const Vector3 &p_axis_A, RID p_body_B, const Vector3 &p_pivot_B, const Vector3 &p_axis_B) const;
-	virtual RID joint_create_pin(RID p_body_A, const Vector3 &p_local_A, RID p_body_B, const Vector3 &p_local_B) const;
 
 	virtual void joint_make_pin(RID p_joint, RID p_body_A, const Vector3 &p_local_A, RID p_body_B, const Vector3 &p_local_B)override;
 	virtual void joint_make_hinge(RID p_joint, RID p_body_A, const Transform &p_hinge_A, RID p_body_B, const Transform &p_hinge_B) override;

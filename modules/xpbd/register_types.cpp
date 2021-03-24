@@ -16,7 +16,7 @@ PhysicsServer3D *_createXPBDPhysicsCallback() {
 
 void register_xpbd_types() {
 #ifndef _3D_DISABLED
-	//PhysicsServer3DManager::register_server("XPBD", &_createXPBDPhysicsCallback);
+	PhysicsServer3DManager::register_server("XPBD", &_createXPBDPhysicsCallback);
 
 	//PhysicsServer3DManager::set_default_server("Bullet", 1);
 	//GLOBAL_DEF("physics/3d/active_soft_world", true);

@@ -2,6 +2,8 @@
 #include "core/templates/rid.h"
 #include "servers/physics_server_3d.h"
 #include "xpbd_physics_server.h"
+#include "space_state.h"
+#include "body_state.h"
 
 const RID zero_RID;
 
@@ -45,7 +47,7 @@ void XPBDPhysicsServer3D::space_set_param(RID p_space, SpaceParameter p_param, r
 real_t XPBDPhysicsServer3D::space_get_param(RID p_space, SpaceParameter p_param) const{return 0;}
 
 // this function only works on physics process, errors and returns null otherwise
-PhysicsDirectSpaceState3D *space_get_direct_state(RID p_space){return 0;}
+PhysicsDirectSpaceState3D *XPBDPhysicsServer3D::space_get_direct_state(RID p_space){return memnew(XPBDDirectSpaceState3D);}
 
 void XPBDPhysicsServer3D::space_set_debug_contacts(RID p_space, int p_max_contacts){return;}
 Vector<Vector3> XPBDPhysicsServer3D::space_get_contacts(RID p_space) const{return Vector<Vector3>();}
@@ -93,6 +95,7 @@ void XPBDPhysicsServer3D::area_set_area_monitor_callback(RID p_area, Object *p_r
 void XPBDPhysicsServer3D::area_set_ray_pickable(RID p_area, bool p_enable){return;}
 
 // BODY API
+RID XPBDPhysicsServer3D::body_create(){return zero_RID;}
 RID XPBDPhysicsServer3D::body_create(BodyMode p_mode, bool p_init_sleeping){return zero_RID;}
 
 void XPBDPhysicsServer3D::body_set_space(RID p_body, RID p_space){return;}
@@ -175,9 +178,10 @@ void XPBDPhysicsServer3D::body_set_force_integration_callback(RID p_body, Object
 void XPBDPhysicsServer3D::body_set_ray_pickable(RID p_body, bool p_enable){return;}
 
 // this function only works on physics process, errors and returns null otherwise
-PhysicsDirectBodyState3D *body_get_direct_state(RID p_body){return 0;}
+PhysicsDirectBodyState3D *XPBDPhysicsServer3D::body_get_direct_state(RID p_body){return memnew(XPBDDirectBodyState3D);}
 
 bool XPBDPhysicsServer3D::body_test_motion(RID p_body, const Transform &p_from, const Vector3 &p_motion, bool p_infinite_inertia, MotionResult *r_result, bool p_exclude_raycast_shapes){return 0;}
+int XPBDPhysicsServer3D::body_test_ray_separation(RID p_body, const Transform &p_transform, bool p_infinite_inertia, Vector3 &r_recover_motion, SeparationResult *r_results, int p_result_max, real_t p_margin){return 0;}
 
 //soft body API
 
@@ -207,6 +211,7 @@ void XPBDPhysicsServer3D::soft_body_set_transform(RID p_body, const Transform &p
 Vector3 XPBDPhysicsServer3D::soft_body_get_vertex_position(RID p_body, int vertex_index) const{return Vector3();}
 
 void XPBDPhysicsServer3D::soft_body_set_ray_pickable(RID p_body, bool p_enable){return;}
+bool XPBDPhysicsServer3D::soft_body_is_ray_pickable(RID body){return false;}
 
 void XPBDPhysicsServer3D::soft_body_set_simulation_precision(RID p_body, int p_simulation_precision){return;}
 int XPBDPhysicsServer3D::soft_body_get_simulation_precision(RID p_body) const{return 0;}
@@ -247,6 +252,8 @@ bool XPBDPhysicsServer3D::soft_body_is_point_pinned(RID p_body, int p_point_inde
 
 //Joint API
 RID XPBDPhysicsServer3D::joint_create(){return zero_RID;}
+
+
 
 void XPBDPhysicsServer3D::joint_clear(RID p_joint){return;}
 
